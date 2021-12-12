@@ -57,7 +57,7 @@ const init = async() => {
     const usersService = new UsersService();
     const authenticationsService = new AuthenticationsService();
     const playlistsService = new PlaylistsService(collaborationsService, cacheService);
-    const playlistsongsService = new PlaylistSongsService();
+    const playlistsongsService = new PlaylistSongsService(cacheService);
     const storageService = new StorageService();
 
     const server = Hapi.server({
@@ -147,6 +147,7 @@ const init = async() => {
             options: {
                 service: ProducerService,
                 validator: ExportsValidator,
+                playlistsService,
             },
         },
         {

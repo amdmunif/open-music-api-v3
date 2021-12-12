@@ -5,8 +5,9 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistSongsService {
-    constructor() {
+    constructor(cacheService) {
         this._pool = new Pool();
+        this._cacheService = cacheService;
     }
 
     async addPlaylistSong({ playlistId, songId }) {
@@ -21,6 +22,7 @@ class PlaylistSongsService {
         if (!result.rowCount) {
             throw new InvariantError('Lagu gagal ditambahkan ke dalam playlist');
         }
+        await this._cacheService.delete(`playlist:${playlistId}`);
         return result.rows[0].id;
     }
 
@@ -36,7 +38,9 @@ class PlaylistSongsService {
             throw new NotFoundError('Lagu tidak ditemukan di dalam playlist');
         }
 
-        return result.rows;
+        const mappedResult = result.rows;
+        await this._cacheService.set(`playlist:${playlistId}`, JSON.stringify(mappedResult));
+        return mappedResult;
     }
 
     async deletePlaylistSong(playlistId, songId) {
@@ -50,6 +54,8 @@ class PlaylistSongsService {
         if (!result.rowCount) {
             throw new InvariantError('Lagu gagal dihapus dari playlist');
         }
+
+        await this._cacheService.delete(`playlist:${playlistId}`);
     }
 
     async verifyPlaylistOwner(playlistId, owner) {

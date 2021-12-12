@@ -1,7 +1,6 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
-const { mapDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
@@ -24,7 +23,7 @@ class PlaylistsService {
             throw new InvariantError('Playlist gagal ditambahkan');
         }
 
-        await this._cacheService.delete(`songs:${owner}`);
+        await this._cacheService.delete(`playlists:${id}`);
         return result.rows[0].id;
     }
 
@@ -32,7 +31,7 @@ class PlaylistsService {
     async getPlaylist(owner) {
         try {
             // mendapatkan catatan dari cache
-            const result = await this._cacheService.get(`songs:${owner}`);
+            const result = await this._cacheService.get(`playlists:${owner}`);
             return JSON.parse(result);
         } catch (error) {
             const query = {
@@ -46,12 +45,8 @@ class PlaylistsService {
                 values: [owner],
             };
             const result = await this._pool.query(query);
-            const mappedResult = result.rows.map(mapDBToModel);
-
-            // catatan akan disimpan pada cache sebelum fungsi getSongs dikembalikan
-            await this._cacheService.set(`songs:${owner}`, JSON.stringify(mappedResult));
-
-            return mappedResult;
+            await this._cacheService.set(`playlists:${owner}`, JSON.stringify(result.rows));
+            return result.rows;
         }
     }
 
@@ -68,6 +63,8 @@ class PlaylistsService {
         if (!result.rowCount) {
             throw new NotFoundError('Playlist gagal dihapus. Id tidak ditemukan');
         }
+        const { owner } = result.rows[0];
+        await this._cacheService.delete(`playlists:${owner}`);
     }
 
     async verifyPlaylistOwner(playlistId, owner) {
