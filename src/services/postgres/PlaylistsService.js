@@ -1,13 +1,15 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
+const { mapDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsService {
-    constructor(collaborationService) {
+    constructor(collaborationService, cacheService) {
         this._pool = new Pool();
         this._collaborationService = collaborationService;
+        this._cacheService = cacheService;
     }
 
     // Add playlist
@@ -21,23 +23,36 @@ class PlaylistsService {
         if (!result.rows[0].id) {
             throw new InvariantError('Playlist gagal ditambahkan');
         }
+
+        await this._cacheService.delete(`songs:${owner}`);
         return result.rows[0].id;
     }
 
     // Get playlist
     async getPlaylist(owner) {
-        const query = {
-            text: `SELECT playlists.id, playlists.name, users.username 
-      FROM playlists
-      LEFT JOIN users ON users.id = playlists.owner
-      LEFT JOIN collaborations 
-      ON collaborations.playlist_id = playlists.id
-      WHERE playlists.owner = $1 
-      OR collaborations.user_id = $1`,
-            values: [owner],
-        };
-        const result = await this._pool.query(query);
-        return result.rows;
+        try {
+            // mendapatkan catatan dari cache
+            const result = await this._cacheService.get(`songs:${owner}`);
+            return JSON.parse(result);
+        } catch (error) {
+            const query = {
+                text: `SELECT playlists.id, playlists.name, users.username 
+                FROM playlists
+                LEFT JOIN users ON users.id = playlists.owner
+                LEFT JOIN collaborations 
+                ON collaborations.playlist_id = playlists.id
+                WHERE playlists.owner = $1 
+                OR collaborations.user_id = $1`,
+                values: [owner],
+            };
+            const result = await this._pool.query(query);
+            const mappedResult = result.rows.map(mapDBToModel);
+
+            // catatan akan disimpan pada cache sebelum fungsi getSongs dikembalikan
+            await this._cacheService.set(`songs:${owner}`, JSON.stringify(mappedResult));
+
+            return mappedResult;
+        }
     }
 
     // Delete playlist by id
