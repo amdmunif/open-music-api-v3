@@ -1,0 +1,4 @@
+node_modules
+music-api-web-server.pem
+.env
+.prod.env
