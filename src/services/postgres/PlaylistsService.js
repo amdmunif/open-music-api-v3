@@ -24,7 +24,7 @@ class PlaylistsService {
             throw new InvariantError('Playlist gagal ditambahkan');
         }
 
-        await this._cacheService.delete(`playlists:${owner}`);
+        await this._cacheService.delete(`playlists:${id}`);
         return result.rows[0].id;
     }
 
