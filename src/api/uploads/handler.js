@@ -13,12 +13,13 @@ class UploadsHandler {
             const { data } = request.payload;
             this._validator.validateImageHeaders(data.hapi.headers);
 
-            const fileLocation = await this._service.writeFile(data, data.hapi);
+            const pictureUrl = await this._service.writeFile(data, data.hapi);
 
             const response = h.response({
                 status: 'success',
+                message: 'Gambar berhasil diunggah',
                 data: {
-                    fileLocation,
+                    pictureUrl: `http://${process.env.HOST}:${process.env.PORT}/upload/images/${pictureUrl}`,
                 },
             });
             response.code(201);
