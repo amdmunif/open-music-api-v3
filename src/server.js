@@ -44,7 +44,7 @@ const ExportsValidator = require('./validator/exports');
 
 // uploads
 const uploads = require('./api/uploads');
-const StorageService = require('./services/S3/StorageService');
+const StorageService = require('./services/storage/StorageService');
 const UploadsValidator = require('./validator/uploads');
 
 // cache
@@ -58,7 +58,7 @@ const init = async() => {
     const authenticationsService = new AuthenticationsService();
     const playlistsService = new PlaylistsService(collaborationsService, cacheService);
     const playlistsongsService = new PlaylistSongsService(cacheService);
-    const storageService = new StorageService();
+    const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
 
     const server = Hapi.server({
         port: process.env.PORT,
