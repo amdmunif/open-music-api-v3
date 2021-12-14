@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
+const { mapDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
@@ -23,7 +24,7 @@ class PlaylistsService {
             throw new InvariantError('Playlist gagal ditambahkan');
         }
 
-        await this._cacheService.delete(`playlists:${id}`);
+        await this._cacheService.delete(`playlists:${owner}`);
         return result.rows[0].id;
     }
 
@@ -45,8 +46,11 @@ class PlaylistsService {
                 values: [owner],
             };
             const result = await this._pool.query(query);
-            await this._cacheService.set(`playlists:${owner}`, JSON.stringify(result.rows));
-            return result.rows;
+            const mappedResult = result.rows.map(mapDBToModel);
+
+            await this._cacheService.set(`playlists:${owner}`, JSON.stringify(mappedResult));
+
+            return mappedResult;
         }
     }
 
