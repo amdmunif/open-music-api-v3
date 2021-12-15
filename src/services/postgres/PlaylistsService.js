@@ -1,7 +1,6 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
-const { mapDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
@@ -46,11 +45,8 @@ class PlaylistsService {
                 values: [owner],
             };
             const result = await this._pool.query(query);
-            const mappedResult = result.rows.map(mapDBToModel);
-
-            await this._cacheService.set(`playlists:${owner}`, JSON.stringify(mappedResult));
-
-            return mappedResult;
+            await this._cacheService.set(`playlists:${owner}`, JSON.stringify(result.rows));
+            return result.rows;
         }
     }
 
