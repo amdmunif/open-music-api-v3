@@ -27,20 +27,26 @@ class PlaylistSongsService {
     }
 
     async getPlaylistSong(playlistId) {
-        const query = {
-            text: 'SELECT s.id, s.title, s.performer FROM playlistsongs x INNER JOIN songs s ON x.song_id = s.id WHERE x.playlist_id = $1',
-            values: [playlistId],
-        };
+        try {
+            // mendapatkan catatan dari cache
+            const result = await this._cacheService.get(`playlists:${playlistId}`);
+            return JSON.parse(result);
+        } catch (error) {
+            const query = {
+                text: 'SELECT s.id, s.title, s.performer FROM playlistsongs x INNER JOIN songs s ON x.song_id = s.id WHERE x.playlist_id = $1',
+                values: [playlistId],
+            };
 
-        const result = await this._pool.query(query);
+            const result = await this._pool.query(query);
 
-        if (!result.rowCount) {
-            throw new NotFoundError('Lagu tidak ditemukan di dalam playlist');
+            if (!result.rowCount) {
+                throw new NotFoundError('Lagu tidak ditemukan di dalam playlist');
+            }
+
+            const mappedResult = result.rows;
+            await this._cacheService.set(`playlist:${playlistId}`, JSON.stringify(mappedResult));
+            return mappedResult;
         }
-
-        const mappedResult = result.rows;
-        await this._cacheService.set(`playlist:${playlistId}`, JSON.stringify(mappedResult));
-        return mappedResult;
     }
 
     async deletePlaylistSong(playlistId, songId) {
