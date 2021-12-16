@@ -22,7 +22,7 @@ class PlaylistSongsService {
         if (!result.rowCount) {
             throw new InvariantError('Lagu gagal ditambahkan ke dalam playlist');
         }
-        await this._cacheService.delete(`playlist:${playlistId}`);
+        await this._cacheService.delete(`playlists:${playlistId}`);
         return result.rows[0].id;
     }
 
@@ -44,7 +44,7 @@ class PlaylistSongsService {
             }
 
             const mappedResult = result.rows;
-            await this._cacheService.set(`playlist:${playlistId}`, JSON.stringify(mappedResult));
+            await this._cacheService.set(`playlists:${playlistId}`, JSON.stringify(mappedResult));
             return mappedResult;
         }
     }
@@ -61,7 +61,7 @@ class PlaylistSongsService {
             throw new InvariantError('Lagu gagal dihapus dari playlist');
         }
 
-        await this._cacheService.delete(`playlist:${playlistId}`);
+        await this._cacheService.delete(`playlists:${playlistId}`);
     }
 
     async verifyPlaylistOwner(playlistId, owner) {
